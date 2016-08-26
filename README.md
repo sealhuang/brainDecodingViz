@@ -1,2 +1,2 @@
 # brainDecodingViz
-A visualization toolbox for brain decoding combined with DNN
+A visualization toolbox for brain activity decoding using Deep Neural Network
