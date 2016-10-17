@@ -48,8 +48,7 @@ layer_names = ['data'] + ['conv'+str(i+1) for i in range(conn_num)]
 G = nx.DiGraph()
 network_info = []
 node_count = 0
-#for conn_idx in range(conn_num):
-for conn_idx in range(2):
+for conn_idx in range(conn_num):
     wt = np.array(f.get(wts[0][conn_idx]))
     wt = wt.transpose()
     src_num, targ_num = wt.shape

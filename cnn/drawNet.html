@@ -16,7 +16,7 @@
     <body>
         <title>DrawNet</title>
         <!--<script src="http://d3js.org/d3.v3.min.js"></script>-->
-        <script src="file:///D:/repo/brainDecodingViz/d3.js"></script>
+        <script src="http://localhost:8888/d3.js"></script>
         
         <div class="background" style="position: absolute; left: 20px; bottom: 10px;">
             
@@ -43,7 +43,7 @@
             var maxunits = 0;//384;
             var unit = [];
 
-            var CNNpath = getQueryVariable("path", "cnn");
+            var CNNpath = getQueryVariable("path", "src");
             var renderlevels = getQueryVariable("renderlevels", 3);
             var screenwidth = getQueryVariable("screenwidth", window.innerWidth);
             var screenheight = getQueryVariable("screenheight", window.innerHeight+100);
