@@ -6,8 +6,6 @@ import h5py
 import numpy as np
 import networkx as nx
 import json
-from itertools import chain
-from networkx.readwrite import json_graph
 
 def adjacency_data(G, network_info):
     """Return data in adjacency format that is suitable for JSON serialization
@@ -27,15 +25,16 @@ def adjacency_data(G, network_info):
     data = {}
     data['network'] = network_info
     data['weights'] = []
-    for n, nbrdict in G.adjacency_iter():
+    node_num = sum([layer['units'] for layer in network_info])
+    for i in range(node_num):
         adj = {'connections': []}
-        for nbr, d in nbrdict.items():
-            adj['connections'].append(dict(chain([('u', nbr), ('w', d['weight'])])))
+        adj['connections'] = [dict(u=x[0], w=G.get_edge_data(x[0], x[1])['weight']) for x in G.in_edges_iter() if x[1]==i]
         data['weights'].append(adj)
+    
     return data
 
 
-db_dir = r'/Users/sealhuang/Downloads/cnn_profile'
+db_dir = os.getcwd()
 cnn_file = os.path.join(db_dir, 'infor.mat')
 
 # open h5py file and load netweok weights matrix
@@ -50,15 +49,15 @@ G = nx.DiGraph()
 network_info = []
 node_count = 0
 #for conn_idx in range(conn_num):
-for conn_idx in range(1):
+for conn_idx in range(2):
     wt = np.array(f.get(wts[0][conn_idx]))
     wt = wt.transpose()
     src_num, targ_num = wt.shape
     for i in range(src_num):
         for j in range(targ_num):
-            if wt[i, j]:
-                G.add_edge(node_count+i, node_count+src_num+j,
-                           weight=abs(wt[i, j]))
+            w = round(float(abs(wt[i, j])), 2)
+            if w:
+                G.add_edge(node_count+i, node_count+src_num+j, weight=w)
     node_count += src_num
     # network info
     src_layer = layer_names[conn_idx]
@@ -70,11 +69,12 @@ for conn_idx in range(1):
     network_info.append(layer_info)
 
 #print adjacency_data(G, network_info)
-#print json_graph.adjacency_data(G)
 
 # save network into json file
-with open('net.json', 'w') as outfile:
-    #outfile.write(json.dumps(json_graph.adjacency_data(G)))
+json_dir = os.path.join(db_dir, 'src')
+if not os.path.exists(json_dir):
+    os.mkdir(json_dir)
+with open(os.path.join(json_dir, 'net.json'), 'w') as outfile:
     outfile.write(json.dumps(adjacency_data(G, network_info)))
 
 
