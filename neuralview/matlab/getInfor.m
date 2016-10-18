@@ -52,10 +52,10 @@ for mapnum=1:m_b
     num_all=[num_all;num];
     crop_all=[crop_all;crop];
     fmap{mapnum}=featuremap;
-    msk=zeros(277,277,num,crop);
+    msk=zeros(227,227,num,crop);
     for i=1:num
         for j=1:crop
-            msk(:,:,i,j)=imresize(featuremap(:,:,i,j),[277,277]);
+            msk(:,:,i,j)=imresize(featuremap(:,:,i,j),[227,227]);
         end
     end
     mask{mapnum}=msk;
@@ -66,24 +66,23 @@ fmapsize=[m_size_all,n_size_all,num_all,crop_all]
 kernel_r_all=[];kernel_c_all=[];input_num_all=[];kernel_num_all=[];
 for layer_num=1:m_l
     weight=net.layers(convlayer(layer_num,:)).params(1).get_data();
+    [kernel_r,kernel_c,input_num,kernel_num]=size(weight);
+    kw=mean(weight,1);kw=mean(kw,2);kw=reshape(kw,input_num,kernel_num);
+    wt{layer_num}=kw;
     if layer_num==1
         weight=weight-min(min(min(min(weight))));
         weight=weight/max(max(max(max(weight))))*255;
         weight=uint8(weight);
     end
-    [kernel_r,kernel_c,input_num,kernel_num]=size(weight);
     kernel_r_all=[kernel_r_all;kernel_r];
     kernel_c_all=[kernel_c_all;kernel_c];
     input_num_all=[input_num_all;input_num];
     kernel_num_all=[kernel_num_all;kernel_num];
     kernel{layer_num}=weight;
-    kw=sum(weight,1);kw=sum(kw,2);kw=reshape(kw,input_num,kernel_num);
-    wt{layer_num}=kw;
 end
 kernelsize=[kernel_r_all,kernel_c_all,input_num_all,kernel_num_all]
 
 %get mask of each featuremap re
-
 
 %save data
 save net net
