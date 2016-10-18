@@ -3,6 +3,7 @@
  drawNet
  
  Antonio Torralba, January 2015
+ Updated by Lijie Huang, Oct 2016
  
  Each unit corresponds to one convolutional unit.
  Each edge weight is computed as the sum of the kernel.
@@ -15,12 +16,12 @@
     
     <body>
         <title>DrawNet</title>
-        <!--<script src="http://d3js.org/d3.v3.min.js"></script>-->
-        <script src="http://localhost:8888/d3.js"></script>
+	<!--<script src="http://d3js.org/d3.v3.min.js"></script>-->
+	<script src="http://localhost:8888/d3.js"></script>
         
         <div class="background" style="position: absolute; left: 20px; bottom: 10px;">
             
-        <font style="font-size:12px;">Each unit corresponds to one convolutional unit. Click on one unit to show the strongest connections going in and out of the unit. For selected units, each pannel shows the 4 images (from ImageNet and Places) that most strongly activate each unit.</font>
+        <font style="font-size:12px;">Each unit corresponds to one convolutional unit. Click on one unit to show the strongest connections going in and out of the unit. For selected units, each pannel shows the saliency part in a sample image that most strongly activate each unit.</font>
             
 
         </div>
@@ -36,15 +37,15 @@
             //   Number of layers to render images
             //   URL json file
             //   selectedunit = goes directly to this unit
-            var edgeThinkness_nonselected = 3;
-            var edgeThinkness_selected = 9;
+            var edgeThinkness_nonselected = 5;
+            var edgeThinkness_selected = 13;
             
             var screenmargin = 90;
             var maxunits = 0;//384;
             var unit = [];
 
-            var CNNpath = getQueryVariable("path", "src");
-            var renderlevels = getQueryVariable("renderlevels", 3);
+            var CNNpath = getQueryVariable("path", "CaffeNet");
+            var renderlevels = getQueryVariable("renderlevels", 4);
             var screenwidth = getQueryVariable("screenwidth", window.innerWidth);
             var screenheight = getQueryVariable("screenheight", window.innerHeight+100);
             var selectedUnit = getQueryVariable("selectedunit", 0);
@@ -151,6 +152,7 @@
             }
             
             function showImageUnit(u, pos, level){
+		if (u>2){
                 if (level==0){
                     size = 100;
                 }else{
@@ -164,7 +166,7 @@
                 .attr("y",cy)
                 .attr("width", size)
                 .attr("height",size)
-                .attr("xlink:href",CNNpath+"/images/topimages/unit_"+u+".jpg")
+                .attr("xlink:href",CNNpath+"/images/saliency/unit"+(u-3)+".png")
                 .on("mouseover", function(){
                     var sel = d3.select(this);
                     cx = 3*sel.attr("x")+3*sel.attr("width")/2;
@@ -181,6 +183,7 @@
                     }
                     )
                 .attr("id", "img"+u);
+		}
             }
             
             function removeImageUnit(u){
@@ -198,7 +201,12 @@
                 // Compute screen location for one unit given the layer and unit index.
                 function unitPosition(layer, unit){
                     var Nunits = network[layer].units;
-                    if (layer>0){
+		    if (layer==0){
+			var samplesize = 101;
+                        var cx = screenwidth/2+(unit-(Nunits-1)/2)*(samplesize+4);
+                        var cy = screenmargin+layer*(screenheight-screenmargin*2)/network.length;
+
+		    }else if (layer>1){
                         var cx = screenwidth/2+(unit-(Nunits-1)/2)*Math.min((screenwidth-2*screenmargin)/Nunits,7);
                         var cy = screenmargin+layer*(screenheight-screenmargin*2)/network.length;
                     }else{
@@ -292,12 +300,12 @@
                 // Put images for layer 0
                 for (var u=0; u<network[0].units; u++) {
                     svgContainer.append("svg:image")
-                    .attr("x",unit[u].cx-6)
-                    .attr("y",unit[u].cy-6)
-                    .attr("width", 11)
-                    .attr("height", 11)
+                    .attr("x",unit[u].cx-52)
+                    .attr("y",unit[u].cy-52)
+                    .attr("width", 101)
+                    .attr("height", 101)
                     .attr("title", "unit: "+unit[u].u)
-                    .attr("xlink:href",CNNpath+"/images/kernels_layer0/kernel"+u+".png")
+                    .attr("xlink:href",CNNpath+"/images/inputsample/data"+u+".png")
                     .attr("id", "u"+u)
                     .attr("unit", u)
                     .attr("selected", 0)
@@ -313,8 +321,32 @@
                         });
                 }
                 
+                // Put images for layer 1
+                for (var u=0; u<network[1].units; u++) {
+                    svgContainer.append("svg:image")
+                    .attr("x",unit[u+network[0].units].cx-6)
+                    .attr("y",unit[u+network[0].units].cy-6)
+                    .attr("width", 11)
+                    .attr("height", 11)
+                    .attr("title", "unit: "+unit[u+network[0].units].u)
+                    .attr("xlink:href",CNNpath+"/images/kernels_layer0/kernel"+u+".png")
+                    .attr("id", "u"+(u+network[0].units))
+                    .attr("unit", u+network[0].units)
+                    .attr("selected", 0)
+                    .on("mousedown", function(){
+                        var sel = d3.select(this);
+                        if (sel.attr("selected")==0){
+                        removeImageUnit(sel.attr("unit"));}
+                        deselectUnit(this,-1,1);
+                        deselectUnit(this,-1,-1);
+                        selectUnit(this,sel.attr("unit"),0,1,1);
+                        selectUnit(this,sel.attr("unit"),0,1,-1);
+                        selectedUnit=sel.attr("unit");
+                        });
+                }
+                
                 // Draw circles for the other layers
-                for (var u=network[0].units; u<unit.length; u++) {
+                for (var u=(network[0].units+network[1].units); u<unit.length; u++) {
                     svgContainer.append("circle")
                     .attr("id", "u"+u)
                     .attr("unit", u)

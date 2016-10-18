@@ -55,7 +55,7 @@ for conn_idx in range(conn_num):
     for i in range(src_num):
         for j in range(targ_num):
             w = round(float(abs(wt[i, j])), 2)
-            if w:
+            if w>0.02:
                 G.add_edge(node_count+i, node_count+src_num+j, weight=w)
     node_count += src_num
     # network info
@@ -70,7 +70,7 @@ for conn_idx in range(conn_num):
 #print adjacency_data(G, network_info)
 
 # save network into json file
-json_dir = os.path.join(db_dir, 'src')
+json_dir = os.path.join(db_dir, 'CaffeNet')
 if not os.path.exists(json_dir):
     os.mkdir(json_dir)
 with open(os.path.join(json_dir, 'net.json'), 'w') as outfile:
