@@ -1,0 +1,399 @@
+<!--  
+
+ drawNet
+ 
+ Antonio Torralba, January 2015
+ Updated by Lijie Huang, Oct 2016
+ 
+ Each unit corresponds to one convolutional unit.
+ Each edge weight is computed as the sum of the kernel.
+ 
+ Modify net.json to visualize different networks. 
+ -->
+ 
+<!DOCTYPE html>
+<meta charset="utf-8">
+    
+    <body>
+        <title>DrawNet</title>
+	<!--<script src="http://d3js.org/d3.v3.min.js"></script>-->
+	<script src="http://localhost:8888/d3.js"></script>
+        
+        <div class="background" style="position: absolute; left: 20px; bottom: 10px;">
+            
+        <font style="font-size:12px;">Each unit corresponds to one convolutional unit. Click on one unit to show the strongest connections going in and out of the unit. For selected units, each pannel shows the saliency part in a sample image that most strongly activate each unit.</font>
+            
+
+        </div>
+        
+        <div class="background" style="position: absolute; left: 0px; top: 0px; width:100%; height:60px; background-color: #dddddd;">
+            <div class="background" style="position: absolute; left: 20px; top: 10px">
+            <font style="font-size:44px;">drawNet</font>
+            </div>
+        </div>
+        
+        <script>
+            //Read visualization parameters:
+            //   Number of layers to render images
+            //   URL json file
+            //   selectedunit = goes directly to this unit
+            var edgeThinkness_nonselected = 5;
+            var edgeThinkness_selected = 13;
+            
+            var screenmargin = 90;
+            var maxunits = 0;//384;
+            var unit = [];
+
+            var CNNpath = getQueryVariable("path", "CaffeNet");
+            var renderlevels = getQueryVariable("renderlevels", 4);
+            var screenwidth = getQueryVariable("screenwidth", window.innerWidth);
+            var screenheight = getQueryVariable("screenheight", window.innerHeight+100);
+            var selectedUnit = getQueryVariable("selectedunit", 0);
+            
+            
+            var svgContainer = d3.select("body").append("svg")
+            .attr("width", screenwidth)
+            .attr("height", screenheight);
+            
+            //svgContainer.append("text")
+            //.text("drawNet")
+            //.attr("x", 20)
+            //.attr("y", 50)
+            //.attr("font-family", "sans-serif")
+            //.attr("font-size", "44px")
+            //.attr("text-anchor", "end")
+            //.attr("fill", "black");
+            
+             
+            d3.json(CNNpath+"/net.json", function(error, data) {drawNetwork(data);});
+            
+            // move to front selected items
+            d3.selection.prototype.moveToFront = function() {
+                return this.each(function(){
+                                 this.parentNode.appendChild(this);
+                                 });
+            };
+                        
+            // read variables from URL
+            function getQueryVariable(variable, def) {
+                var query = window.location.search.substring(1);
+                var vars = query.split("&");
+                for (var i=0;i<vars.length;i++) {
+                    var pair = vars[i].split("=");
+                    if (pair[0] == variable) {
+                        return pair[1];
+                    }
+                } 
+                return def;
+            }
+
+            
+            // Handling unit selection
+            function selectUnit(evt,u,level,pos,direction){
+                var unit_u = d3.select("#u"+u);
+
+                var h = Math.floor(Math.random() * 360);
+                var color = "hsl("+h+",75%, 50%)";
+                var color = "hsl("+u+",75%, 50%)";
+                
+                
+                unit_u.style("fill", color).attr("r", 5).moveToFront();
+                
+                if (direction==1){
+                    var links = unit[u].links_input;
+                    var connected_units = unit[u].input_units;
+                }else {
+                    var links = unit[u].links_output;
+                    var connected_units = unit[u].output_units;
+                }
+                
+                for (var l=0; l<links.length; l++){
+                    link = d3.select("#l"+links[l]);
+                    w = link.attr("weight");
+                    link.style("stroke", color).attr("opacity", 1).attr("stroke-width", edgeThinkness_selected*Math.abs(w)).moveToFront();
+                }
+                
+                for (var k=0; k<connected_units.length; k++){
+                    selectUnit(evt, connected_units[k], level+1, k, direction);
+                }
+                
+                
+                if ((level<renderlevels)&&(!(direction==-1 && level==0)))
+                {
+                        unit_u.attr("selected", 1);
+                        showImageUnit(u, pos, level);
+                }
+            }
+            
+            function deselectUnit(evt,u,direction){
+                if (u==-1){u = selectedUnit;}
+                
+                d3.select("#u"+u).style("fill", "rgb(155,155,155)").attr("r", 3).attr("selected", 0);
+                removeImageUnit(u);
+                
+                if (direction==1){
+                    var links = unit[u].links_input;
+                    var connected_units = unit[u].input_units;
+                }else{
+                    var links = unit[u].links_output;
+                    var connected_units = unit[u].output_units;
+                }
+                
+                for (var l=0; l<links.length; l++){
+                    link = d3.select("#l"+links[l]);
+                    w = link.attr("weight");
+
+                    link.style("stroke", "rgb(200,200,200)").attr("stroke-width", edgeThinkness_nonselected*Math.abs(w)).attr("opacity", 0.2);
+                }
+
+                for (var k=0; k<connected_units.length; k++){
+                    deselectUnit(evt, connected_units[k], direction);
+                }
+            }
+            
+            function showImageUnit(u, pos, level){
+		if (u>2){
+                if (level==0){
+                    size = 100;
+                }else{
+                    size = 80/(1+0.2*level);
+                }
+                cx = unit[u].cx-size/2;
+                cy = unit[u].cy-size/2+(size/2+7)*(2*(1-pos%2)-1);
+                                
+                svgContainer.append("svg:image")
+                .attr("x",cx)
+                .attr("y",cy)
+                .attr("width", size)
+                .attr("height",size)
+                .attr("xlink:href",CNNpath+"/images/saliency/unit"+(u-3)+".png")
+                .on("mouseover", function(){
+                    var sel = d3.select(this);
+                    cx = 3*sel.attr("x")+3*sel.attr("width")/2;
+                    cy = 3*sel.attr("y")+3*sel.attr("height")/2;
+                    sel.transition().duration(500).attr("transform", "translate(-"+(cx)+",-"+(cy)+") scale(4,4)");
+                    sel.moveToFront();
+                    }
+                    )
+                .on("mouseout", function(){
+                    var sel = d3.select(this);
+                    cx = sel.attr("x");
+                    cy = sel.attr("y");
+                    sel.transition().attr("transform", "translate("+(3*cx+120)+","+(3*cy+120)+") scale(1/4,1/4)");
+                    }
+                    )
+                .attr("id", "img"+u);
+		}
+            }
+            
+            function removeImageUnit(u){
+                d3.select("#img"+u).remove();
+            }
+            
+            ///////////////
+            // RENDERING THE NETWORK
+            function drawNetwork(data){
+                network = data.network;
+                weights = data.weights;
+
+                maxunits = Math.max(network.units);
+                
+                // Compute screen location for one unit given the layer and unit index.
+                function unitPosition(layer, unit){
+                    var Nunits = network[layer].units;
+		    if (layer==0){
+			var samplesize = 101;
+                        var cx = screenwidth/2+(unit-(Nunits-1)/2)*(samplesize+4);
+                        var cy = screenmargin+layer*(screenheight-screenmargin*2)/network.length;
+
+		    }else if (layer>1){
+                        var cx = screenwidth/2+(unit-(Nunits-1)/2)*Math.min((screenwidth-2*screenmargin)/Nunits,7);
+                        var cy = screenmargin+layer*(screenheight-screenmargin*2)/network.length;
+                    }else{
+                        var kernelsize = 11;
+                        var cx = screenwidth/2+(unit-(Nunits-1)/2)*(kernelsize+2);
+                        var cy = screenmargin+layer*(screenheight-screenmargin*2)/network.length;
+                    }
+                    return [cx, cy];
+                }
+                
+                
+                // Store all units screen locations
+                for (var layer=0; layer<network.length; layer++){
+                    var Nunits = network[layer].units;
+                    for (var i=0; i<Nunits; i++) {
+                        var pos = unitPosition(layer, i);
+                        unit.push ({"cx": pos[0],
+                                   "cy":pos[1],
+                                   "u":i,
+                                   "links_input": [],
+                                   "links_output": [],
+                                   "input_units": [],
+                                   "output_units": []
+                                   });
+                    }
+                }
+                
+                
+                //////////////////////////////////////////////////////
+                // DRAWING FUNCTIONS
+                
+                // Show layer names
+                for (var layer=0; layer<network.length; layer++){
+                    var pos = unitPosition(layer, 0);
+                    svgContainer.append("text")
+                                .text(network[layer].name)
+                                .attr("x", pos[0]-10)
+                                .attr("y", pos[1]+2)
+                                .attr("font-family", "sans-serif")
+                                .attr("font-size", "12px")
+                                .attr("text-anchor", "end")
+                                .attr("fill", "black");
+                }
+                var pos = unitPosition(0, 0);
+                svgContainer.append("text")
+                .text(CNNpath)
+                .attr("x", 18)
+                .attr("y", pos[1]+2-15)
+                .attr("font-family", "sans-serif")
+                .attr("font-size", "21px")
+                .attr("fill", "red");
+
+                // Draw edges
+                l=0;
+                for (var u=0; u<unit.length; u++){
+                    x1 = unit[u].cx;
+                    y1 = unit[u].cy;
+                    for (var i=0; i<weights[u].connections.length; i++){
+                        var u_input = weights[u].connections[i].u;
+                        x2 = unit[u_input].cx;
+                        y2 = unit[u_input].cy;
+                        w = weights[u].connections[i].w;
+                        
+                        // store network tree:
+                        unit[u].links_input.push(l); // index to link number
+                        unit[u].input_units.push(u_input); // array of input units
+                        
+                        unit[u_input].links_output.push(l); // index to link number
+                        unit[u_input].output_units.push(u); // array of output units
+                                                
+                        //var color = "rgb("+(200*(1-Math.sign(w)))+","+(150+25*(1+Math.sign(w)))+", 200)";
+                        //var color = "rgb(200,200,200)";
+                        
+                        var color = "hsl("+u+",75%, 80%)";
+
+                        svgContainer.append("path")
+                        .attr("id", "l"+l)
+                        .attr("weight", w)
+                        .attr("fill", "none")
+                        .attr("opacity", 0.2)
+                        .attr("stroke", color)
+                        .attr("stroke-width", edgeThinkness_nonselected*Math.abs(w))
+                        .attr("d", d3.svg.diagonal()
+                              .source( {"x":x1, "y":y1} )
+                              .target( {"x":x2, "y":y2} )
+                              );
+                        l++;
+                    }
+                }
+                
+                // Put images for layer 0
+                for (var u=0; u<network[0].units; u++) {
+                    svgContainer.append("svg:image")
+                    .attr("x",unit[u].cx-52)
+                    .attr("y",unit[u].cy-52)
+                    .attr("width", 101)
+                    .attr("height", 101)
+                    .attr("title", "unit: "+unit[u].u)
+                    .attr("xlink:href",CNNpath+"/images/inputsample/data"+u+".png")
+                    .attr("id", "u"+u)
+                    .attr("unit", u)
+                    .attr("selected", 0)
+                    .on("mousedown", function(){
+                        var sel = d3.select(this);
+                        if (sel.attr("selected")==0){
+                        removeImageUnit(sel.attr("unit"));}
+                        deselectUnit(this,-1,1);
+                        deselectUnit(this,-1,-1);
+                        selectUnit(this,sel.attr("unit"),0,1,1);
+                        selectUnit(this,sel.attr("unit"),0,1,-1);
+                        selectedUnit=sel.attr("unit");
+                        });
+                }
+                
+                // Put images for layer 1
+                for (var u=0; u<network[1].units; u++) {
+                    svgContainer.append("svg:image")
+                    .attr("x",unit[u+network[0].units].cx-6)
+                    .attr("y",unit[u+network[0].units].cy-6)
+                    .attr("width", 11)
+                    .attr("height", 11)
+                    .attr("title", "unit: "+unit[u+network[0].units].u)
+                    .attr("xlink:href",CNNpath+"/images/kernels_layer0/kernel"+u+".png")
+                    .attr("id", "u"+(u+network[0].units))
+                    .attr("unit", u+network[0].units)
+                    .attr("selected", 0)
+                    .on("mousedown", function(){
+                        var sel = d3.select(this);
+                        if (sel.attr("selected")==0){
+                        removeImageUnit(sel.attr("unit"));}
+                        deselectUnit(this,-1,1);
+                        deselectUnit(this,-1,-1);
+                        selectUnit(this,sel.attr("unit"),0,1,1);
+                        selectUnit(this,sel.attr("unit"),0,1,-1);
+                        selectedUnit=sel.attr("unit");
+                        });
+                }
+                
+                // Draw circles for the other layers
+                for (var u=(network[0].units+network[1].units); u<unit.length; u++) {
+                    svgContainer.append("circle")
+                    .attr("id", "u"+u)
+                    .attr("unit", u)
+                    .attr("selected", 0)
+                    .attr("cx", unit[u].cx)
+                    .attr("cy", unit[u].cy)
+                    .attr("r", 3)
+                    .attr("title", "unit: "+unit[u].u)
+                    .attr("fill", "rgb(155,155,155)")
+                    .attr("stroke", "black")
+                    .attr("stroke-width", 0.5)
+                    .on("mouseover", function(){
+                        var sel = d3.select(this);
+                        if (sel.attr("selected")==0){
+                        showImageUnit(sel.attr("unit"), 1, 0);}
+                        sel.attr('r',6);
+                        sel.moveToFront();
+                        }
+                        )
+                    .on("mouseout", function(){
+                        var sel = d3.select(this);
+                        sel.attr('r',3);
+                        if (sel.attr("selected")==0){
+                        removeImageUnit(sel.attr("unit"));}
+                        }
+                        )
+                    .on("mousedown", function(){
+                        var sel = d3.select(this);
+                        if (sel.attr("selected")==0){
+                        removeImageUnit(sel.attr("unit"));}
+                        deselectUnit(this,-1,1);
+                        deselectUnit(this,-1,-1);
+                        selectUnit(this,sel.attr("unit"),0,1,1);
+                        selectUnit(this,sel.attr("unit"),0,1,-1);
+                        selectedUnit=sel.attr("unit");
+                        }
+                        )
+                }
+                
+                if (selectedUnit>0){
+                    selectUnit(this,selectedUnit,0,1,1);
+                    selectUnit(this,selectedUnit,0,1,-1);
+                };
+            }
+            
+            </script>
+        
+
+        
+    </body>

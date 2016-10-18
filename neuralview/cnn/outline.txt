@@ -6,3 +6,5 @@
 3. Visulization with d3
    ref: view-source:http://people.csail.mit.edu/torralba/research/drawCNN/drawNet.html
         https://d3js.org/
+
+To use d3.js, a local http server should be opened, try `python -m SimpleHTTPServer 8888 &` in this directory.
