@@ -1,4 +1,4 @@
-1. Store network profiles in NetworkX(a python package)
+1. Store network profiles in NetworkX
    ref: http://lear.inrialpes.fr/people/gaidon/lear_xrce_deep_learning_01.html
         https://networkx.github.io
 2. Save network in json

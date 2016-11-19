@@ -15,7 +15,7 @@
 <meta charset="utf-8">
     
     <body>
-        <title>DrawNet</title>
+        <title>Deep Neural Network Visualization</title>
 	<!--<script src="http://d3js.org/d3.v3.min.js"></script>-->
 	<script src="http://localhost:8888/d3.js"></script>
         
@@ -28,7 +28,7 @@
         
         <div class="background" style="position: absolute; left: 0px; top: 0px; width:100%; height:60px; background-color: #dddddd;">
             <div class="background" style="position: absolute; left: 20px; top: 10px">
-            <font style="font-size:44px;">drawNet</font>
+            <font style="font-size:44px;">DNN Visualization</font>
             </div>
         </div>
         
@@ -37,8 +37,8 @@
             //   Number of layers to render images
             //   URL json file
             //   selectedunit = goes directly to this unit
-            var edgeThinkness_nonselected = 5;
-            var edgeThinkness_selected = 13;
+            var edgeThinkness_nonselected = 9;
+            var edgeThinkness_selected = 15;
             
             var screenmargin = 90;
             var maxunits = 0;//384;
@@ -305,7 +305,7 @@
                     .attr("width", 101)
                     .attr("height", 101)
                     .attr("title", "unit: "+unit[u].u)
-                    .attr("xlink:href",CNNpath+"/images/inputsample/data"+u+".png")
+                    .attr("xlink:href",CNNpath+"/images/inputs/data"+u+".png")
                     .attr("id", "u"+u)
                     .attr("unit", u)
                     .attr("selected", 0)
