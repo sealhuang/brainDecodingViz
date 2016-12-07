@@ -1,5 +1,9 @@
 %load image
-im=imread('../../examples/images/cat.jpg');
+im=imread('../../examples/images/2008_003764cut.jpg');
+IMAGE_DIM = 256;
+CROPPED_DIM = 227;
+pct=imresize(im,[IMAGE_DIM,IMAGE_DIM]);
+pct=pct(1:CROPPED_DIM,1:CROPPED_DIM,:);
 %get net
 [~,~,net]=classification_demo(im, 1);
 
@@ -86,7 +90,7 @@ kernelsize=[kernel_r_all,kernel_c_all,input_num_all,kernel_num_all]
 
 %save data
 save net net
-save infor fmapsize kernelsize blob_names layer_names fmf fmap mask kernel wt
+save infor fmapsize kernelsize blob_names layer_names fmf fmap mask kernel wt pct
 
 
 

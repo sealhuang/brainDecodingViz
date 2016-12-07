@@ -1,6 +1,7 @@
 load infor;
 load net;
-load image;
+data=net.blobs('data').get_data();
+threshold=0.5;
 
 wt_new=wt{2};
 [m,n]=size(wt_new);
@@ -32,15 +33,17 @@ wt_r=[z,wt_r];
 wt_new=[wt_l;wt_r];
 wt{5}=wt_new;
 
-img1=data(:,:,:,1);
-img1=permute(img1,[2,1,3]);
-img1=img1(:,:,[3,2,1]);
+img1=pct;
+% img1=data(:,:,:,1);
+% img1=permute(img1,[2,1,3]);
+% img1=img1(:,:,[3,2,1]);
 [~,~,n]=size(img1);
 for i=1:n
     img_tem=img1;
     img_tem(:)=0;
     img_tem(:,:,i)=img1(:,:,i);
-    imwrite(uint8(img_tem),['img/data',num2str(i-1),'.png']);
+%     img_tem=img_tem(:,:,[3,2,1]);
+    imwrite(uint8(img_tem),['img/data',num2str(3-i),'.png']);
 end
 
 knl=kernel{1};
@@ -58,11 +61,17 @@ for i=1:5
     [~,~,n,~]=size(msk);
     for j=1:n
         msk_tem=msk(:,:,j,1);
-        msk_tem=msk_tem/max(msk_tem(:));
+        msk_tem=msk_tem/(max(msk_tem(:))+0.0001);
+        str=strel('disk',5);
+        msk_tem=imerode(msk_tem,str);
+        msk_tem=imdilate(msk_tem,str);
+        msk_tem(msk_tem>threshold)=1;
+        msk_tem(msk_tem<=threshold)=0.4;
         msk_tem_3(:,:,3)=msk_tem;
         msk_tem_3(:,:,2)=msk_tem;
         msk_tem_3(:,:,1)=msk_tem;
         tsprt=double(img1);
+%         tsprt=tsprt(:,:,[3,2,1]);
         tsprt=uint8(tsprt.*msk_tem_3);
         imwrite(tsprt,['img/unit',num2str(cnt),'.png']);
         cnt=cnt+1;
