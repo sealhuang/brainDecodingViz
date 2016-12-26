@@ -8,8 +8,8 @@ pct=pct(1:CROPPED_DIM,1:CROPPED_DIM,:);
 [~,~,net]=classification_demo(im, 1);
 
 %get blob and layer names
-blob_names=net.blob_names
-layer_names=net.layer_names
+blob_names=net.blob_names;
+layer_names=net.layer_names;
 convblob=[];
 for i=1:length(blob_names)
     if strcmp(blob_names{i}(1:3),'con')
@@ -64,7 +64,7 @@ for mapnum=1:m_b
     end
     mask{mapnum}=msk;
 end
-fmapsize=[m_size_all,n_size_all,num_all,crop_all]
+fmapsize=[m_size_all,n_size_all,num_all,crop_all];
 
 %get kernel and the weight of kernel between layers and its size of conv layers
 kernel_r_all=[];kernel_c_all=[];input_num_all=[];kernel_num_all=[];
@@ -74,8 +74,11 @@ for layer_num=1:m_l
     kw=mean(weight,1);kw=mean(kw,2);kw=reshape(kw,input_num,kernel_num);
     wt{layer_num}=kw;
     if layer_num==1
-        weight=weight-min(min(min(min(weight))));
-        weight=weight/max(max(max(max(weight))))*255;
+        maxv = max(weight(:));
+        minv = min(weight(:));
+        weight = (weight - minv)/(maxv - minv)*255;
+%         weight=weight-min(min(min(min(weight))));
+%         weight=weight/max(max(max(max(weight))))*255;
         weight=uint8(weight);
     end
     kernel_r_all=[kernel_r_all;kernel_r];
