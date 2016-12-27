@@ -15,12 +15,12 @@ def plot_conv1_kernels(net_name):
                                  net_name+'.caffemodel')
     net = caffe.Net(model_def, model_weights, caffe.TEST)
     kernels = net.params['conv1'][0].data.transpose(0, 2, 3, 1)
+    # normalize data for display
+    kernels = (kernels - kernels.min()) / (kernels.max() - kernels.min())
     for i in range(kernels.shape[0]):
-        data = kernels[i, ...]
-        # normalize data for display
-        data = (data - data.min()) / (data.max() - data.min())
-        plt.imshow(data)
-        
-
+        im = plt.imshow(kernels[i, ...])
+        im.axes.get_xaxis().set_visible(False)
+        im.axes.get_yaxis().set_visible(False)
+        plt.savefig('kernel%s.png'%(i))
 
 
