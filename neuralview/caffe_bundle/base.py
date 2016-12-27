@@ -18,7 +18,9 @@ def plot_conv1_kernels(net_name):
     # normalize data for display
     kernels = (kernels - kernels.min()) / (kernels.max() - kernels.min())
     for i in range(kernels.shape[0]):
-        im = plt.imshow(kernels[i, ...])
+        data = kernels[i, ...]
+        data = data[:, :, ::-1]
+        im = plt.imshow(data)
         im.axes.get_xaxis().set_visible(False)
         im.axes.get_yaxis().set_visible(False)
         plt.savefig('kernel%s.png'%(i), bbox_inches='tight', pad_inches=0)
