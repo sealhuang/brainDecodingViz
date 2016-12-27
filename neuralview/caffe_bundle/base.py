@@ -21,6 +21,6 @@ def plot_conv1_kernels(net_name):
         im = plt.imshow(kernels[i, ...])
         im.axes.get_xaxis().set_visible(False)
         im.axes.get_yaxis().set_visible(False)
-        plt.savefig('kernel%s.png'%(i))
+        plt.savefig('kernel%s.png'%(i), bbox_inches='tight', pad_inches=0)
 
 
